@@ -1,0 +1,9 @@
+@CQRS.Sample_HostAddress = http://localhost:5205
+
+POST {{CQRS.Sample_HostAddress}}/api/Hello/SayHello
+Accept: application/json
+{
+  name: "Krunal"
+}
+
+###
