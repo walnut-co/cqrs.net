@@ -5,6 +5,18 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+    inputs:
+      run_tests:
+        description: 'Run tests (if available)'
+        required: false
+        default: true
+        type: boolean
+      build_sample:
+        description: 'Build sample project'
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   build:
@@ -26,9 +38,11 @@ jobs:
       run: dotnet build package/CQRS.csproj --configuration Release --no-restore
       
     - name: Build Sample
+      if: github.event.inputs.build_sample != 'false'
       run: dotnet build sample/CQRS.Sample.csproj --configuration Release --no-restore
       
     - name: Run tests (if any)
+      if: github.event.inputs.run_tests != 'false'
       run: |
         if [ -f "tests" ] || find . -name "*.Tests.csproj" -o -name "*Test*.csproj" | grep -q .; then
           dotnet test --configuration Release --no-build --verbosity normal
