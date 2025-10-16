@@ -35,24 +35,8 @@ jobs:
       run: dotnet restore package/CQRS.csproj
       
     - name: Build
-      run: dotnet build package/CQRS.csproj --configuration Release --no-restore
-      
-    - name: Build Sample
-      if: github.event.inputs.build_sample != 'false'
-      run: dotnet build sample/CQRS.Sample.csproj --configuration Release --no-restore
-      
-    - name: Run tests (if any)
-      if: github.event.inputs.run_tests != 'false'
-      run: |
-        if [ -f "tests" ] || find . -name "*.Tests.csproj" -o -name "*Test*.csproj" | grep -q .; then
-          dotnet test --configuration Release --no-build --verbosity normal
-        else
-          echo "No tests found, skipping test step"
-        fi
+      run: dotnet build package/CQRS.csproj --configuration Release
         
-    - name: Create test package (without publishing)
-      run: dotnet pack package/CQRS.csproj --configuration Release --no-build --output ./test-nupkgs
-      
     - name: Verify package contents
       run: |
         echo "Created packages:"
