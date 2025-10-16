@@ -10,10 +10,18 @@ on:
         description: 'Version to deploy (e.g., 1.0.1)'
         required: true
         type: string
+      create_release:
+        description: 'Create GitHub release (for manual deployments)'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for creating releases
+      packages: write  # Required for publishing packages
     
     steps:
     - name: Checkout code
@@ -58,22 +66,32 @@ jobs:
       run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
       
     - name: Create GitHub Release
-      if: github.event_name == 'push'
-      uses: actions/create-release@v1
+      if: github.event_name == 'push' || github.event.inputs.create_release == 'true'
+      run: |
+        # For manual deploys, create a tag first if it doesn't exist
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          git tag v${{ steps.version.outputs.VERSION }} || echo "Tag already exists"
+          git push origin v${{ steps.version.outputs.VERSION }} || echo "Tag already pushed"
+          TAG_NAME="v${{ steps.version.outputs.VERSION }}"
+        else
+          TAG_NAME="${{ github.ref_name }}"
+        fi
+        
+        # Create release with package files attached
+        gh release create $TAG_NAME \
+          --title "Release ${{ steps.version.outputs.VERSION }}" \
+          --notes "Release version ${{ steps.version.outputs.VERSION }} of Walnut.CQRS.Net
+
+        ## Changes
+        - Automated release via GitHub Actions
+        - NuGet package deployed to https://www.nuget.org/packages/Walnut.CQRS.Net/
+        
+        ## Package Files
+        - \`Walnut.CQRS.Net.${{ steps.version.outputs.VERSION }}.nupkg\`
+        - \`Walnut.CQRS.Net.${{ steps.version.outputs.VERSION }}.snupkg\` (symbols)" \
+          ./nupkgs/*.nupkg ./nupkgs/*.snupkg || echo "Release may already exist, continuing..."
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ steps.version.outputs.VERSION }}
-        body: |
-          Release version ${{ steps.version.outputs.VERSION }} of Walnut.CQRS.Net
-          
-          ## Changes
-          - Automated release via GitHub Actions
-          - NuGet package deployed to https://www.nuget.org/packages/Walnut.CQRS.Net/
-          
-        draft: false
-        prerelease: false
         
     - name: Upload NuGet packages as artifacts
       uses: actions/upload-artifact@v4
