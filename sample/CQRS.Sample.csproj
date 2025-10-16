@@ -11,10 +11,7 @@
 		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.10" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\package\CQRS.csproj" />
+		<PackageReference Include="Walnut.CQRS.Net" Version="1.0.0" />
 	</ItemGroup>
 
 </Project>
