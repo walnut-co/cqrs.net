@@ -1,0 +1,91 @@
+name: Deploy to NuGet
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.0.0, v1.2.3, etc.
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., 1.0.1)'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore package/CQRS.csproj
+      
+    - name: Set version from tag or input
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" == "push" ]; then
+          # Extract version from git tag (remove 'v' prefix)
+          VERSION=${GITHUB_REF#refs/tags/v}
+        else
+          # Use manual input version
+          VERSION=${{ github.event.inputs.version }}
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Deploying version: $VERSION"
+        
+    - name: Update project version
+      run: |
+        # Update the version in the csproj file
+        sed -i "s/<Version>.*<\/Version>/<Version>${{ steps.version.outputs.VERSION }}<\/Version>/" package/CQRS.csproj
+        
+    - name: Build project
+      run: dotnet build package/CQRS.csproj --configuration Release --no-restore
+      
+    - name: Run tests (if any)
+      run: |
+        if [ -f "tests" ] || find . -name "*.Tests.csproj" -o -name "*Test*.csproj" | grep -q .; then
+          dotnet test --configuration Release --no-build --verbosity normal
+        else
+          echo "No tests found, skipping test step"
+        fi
+        
+    - name: Create NuGet package
+      run: dotnet pack package/CQRS.csproj --configuration Release --no-build --output ./nupkgs
+      
+    - name: List created packages
+      run: ls -la ./nupkgs/
+      
+    - name: Deploy to NuGet
+      run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      
+    - name: Create GitHub Release
+      if: github.event_name == 'push'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ steps.version.outputs.VERSION }}
+        body: |
+          Release version ${{ steps.version.outputs.VERSION }} of Walnut.CQRS.Net
+          
+          ## Changes
+          - Automated release via GitHub Actions
+          - NuGet package deployed to https://www.nuget.org/packages/Walnut.CQRS.Net/
+          
+        draft: false
+        prerelease: false
+        
+    - name: Upload NuGet packages as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages-${{ steps.version.outputs.VERSION }}
+        path: ./nupkgs/
+        retention-days: 30

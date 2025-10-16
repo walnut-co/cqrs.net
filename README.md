@@ -1,5 +1,8 @@
 # CQRS.Net
 
+[![NuGet Version](https://img.shields.io/nuget/v/Walnut.CQRS.Net.svg)](https://www.nuget.org/packages/Walnut.CQRS.Net/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/Walnut.CQRS.Net.svg)](https://www.nuget.org/packages/Walnut.CQRS.Net/)
+
 A lightweight CQRS (Command Query Responsibility Segregation) implementation for .NET projects.
 
 ## Features
@@ -13,7 +16,7 @@ A lightweight CQRS (Command Query Responsibility Segregation) implementation for
 ## Installation
 
 ```bash
-dotnet add package CQRS.Net
+dotnet add package Walnut.CQRS.Net
 ```
 
 ## Usage
