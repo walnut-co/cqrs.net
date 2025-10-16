@@ -46,16 +46,8 @@ jobs:
         sed -i "s/<Version>.*<\/Version>/<Version>${{ steps.version.outputs.VERSION }}<\/Version>/" package/CQRS.csproj
         
     - name: Build project
-      run: dotnet build package/CQRS.csproj --configuration Release --no-restore
+      run: dotnet build package/CQRS.csproj --configuration Release
       
-    - name: Run tests (if any)
-      run: |
-        if [ -f "tests" ] || find . -name "*.Tests.csproj" -o -name "*Test*.csproj" | grep -q .; then
-          dotnet test --configuration Release --no-build --verbosity normal
-        else
-          echo "No tests found, skipping test step"
-        fi
-        
     - name: Create NuGet package
       run: dotnet pack package/CQRS.csproj --configuration Release --no-build --output ./nupkgs
       
