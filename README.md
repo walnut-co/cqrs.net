@@ -25,6 +25,17 @@ dotnet add package Walnut.CQRS.Net
 
 ```csharp
 services.AddCQRS();
+
+builder.Services.AddScoped(typeof(IRequestPipeline<,>), typeof(AuthorizationBehaviour<,>));
+builder.Services.AddScoped(typeof(IRequestPipeline<,>), typeof(ValidationBehavior<,>));
+
+// Automatically register all IRequestHandler implementations from the current assembly
+var assembly = Assembly.GetExecutingAssembly();
+builder.Services.Scan(scan => scan
+    .FromAssemblies(assembly)
+    .AddClasses(classes => classes.AssignableTo(typeof(IRequestHandler<,>)))
+    .AsImplementedInterfaces()
+    .WithTransientLifetime());
 ```
 
 ### 2. Define your commands and queries
